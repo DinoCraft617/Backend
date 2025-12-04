@@ -26,6 +26,7 @@ const DB_CONFIG = {
   user: "4TWMF3o8nW2rqkp.root",
   password: "Pc29ZYqysxBygU2G",
   database: "pr_uni",
+  port: 4000,
   connectionLimit: 10
 };
 const EMAIL_CONFIG = {
@@ -1480,5 +1481,6 @@ server.listen(PORT, () => {
     });
 
 });
+
 
 
