@@ -20,7 +20,7 @@ const app = express();
 // ======================
 const ENCRYPTION_KEY = "1234567890abcdef1234567890abcdef";
 const JWT_SECRET = "06177160876567451054943720268410";
-const PORT = process.env.PORT || 4000; 
+const PORT = process.env.PORT || 3000; 
 const DB_CONFIG = {
   host: "gateway01.us-east-1.prod.aws.tidbcloud.com",
   user: "4TWMF3o8nW2rqkp.root",
@@ -1480,4 +1480,5 @@ server.listen(PORT, () => {
     });
 
 });
+
 
