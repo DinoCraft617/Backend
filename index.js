@@ -74,12 +74,6 @@ const decryptData = (ciphertext) => {
   }
 };
 
-// Configuración HTTPS
-const httpsOptions = {
-  key: fs.readFileSync('key.pem'),  
-  cert: fs.readFileSync('cert.pem')   
-};
-
 const generateVerificationCode = () => Math.floor(100000 + Math.random() * 900000).toString();
 
 // Configuración inicial
@@ -1498,4 +1492,5 @@ server.listen(PORT, () => {
       console.log('El servidor Express está corriendo, pero no podrá manejar peticiones a la BD.');
       // Opcional: process.exit(1); para detener la aplicación si la BD es crítica.
     });
+
 });
