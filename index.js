@@ -85,21 +85,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use(cors({
-  origin: [
-    "https://localhost:3000", 
-    "https://localhost", 
-    "http://localhost:3000", 
-    "http://localhost:8081",
-    "http://192.168.1.66:8081", 
-    "http://192.168.1.66:3000",
-    "http://10.2.0.62:3000", 
-    "http://localhost",
-    "https://10.0.2.2:3000",    // Android emulator
-    "http://10.0.2.2:3000",     
-    "exp://192.168.1.*:19000",  // Expo
-    "exp://192.168.1.*:19001",
-    "exp://192.168.1.*:8081"
-  ],
+  origin: "*",
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"]
@@ -1494,3 +1480,4 @@ server.listen(PORT, () => {
     });
 
 });
+
