@@ -47,11 +47,17 @@ const DB_CONFIG = {
 };
 
 const EMAIL_CONFIG = {
-  service: "gmail",
+  host: "smtp.gmail.com", 
+  port: 465,              
+  secure: true,           
   auth: {
     user: "dinocraft617@gmail.com",
-    pass: "ihgd wnvq mpdo hinp"
-  }
+    pass: "ihgd wnvq mpdo hinp" 
+  },
+
+  connectionTimeout: 20000, 
+  greetingTimeout: 20000,
+  socketTimeout: 20000,
 };
 
 // Funciones de utilidad mejoradas
@@ -1498,6 +1504,7 @@ server.listen(PORT, () => {
     });
 
 });
+
 
 
 
