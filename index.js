@@ -10,9 +10,13 @@ const speakeasy = require('speakeasy');
 const CryptoJS = require('crypto-js');
 const http = require('http');
 const fs = require('fs');
+const { Resend } = require('resend');
 const { body, validationResult } = require('express-validator');
 
 const app = express();
+
+const resend = new Resend('re_hMwyHPtx_6zkNekPZ835VJjt3NayfjLw9');
+
 
 
 // ======================
@@ -46,16 +50,13 @@ const DB_CONFIG = {
   charset: 'utf8mb4'
 };
 
+
 const EMAIL_CONFIG = {
-  service: 'gmail', // Deja que Nodemailer configure los puertos automáticamente
+  service: "gmail",
   auth: {
     user: "dinocraft617@gmail.com",
     pass: "ihgd wnvq mpdo hinp"
-  },
-  tls: {
-    rejectUnauthorized: false // Ignora errores de certificado del servidor
-  },
-  family: 4 
+  }
 };
 
 // Funciones de utilidad mejoradas
@@ -94,6 +95,12 @@ const decryptData = (ciphertext) => {
     console.error('Error al desencriptar:', error);
     throw error;
   }
+};
+
+// Configuración HTTPS
+const httpsOptions = {
+  key: fs.readFileSync('key.pem'),  
+  cert: fs.readFileSync('cert.pem')   
 };
 
 const generateVerificationCode = () => Math.floor(100000 + Math.random() * 900000).toString();
@@ -233,15 +240,30 @@ app.post('/register', [
     const verificationCode = generateVerificationCode();
     console.log(`Verification code for ${email}: ${verificationCode}`);
 
-    // Send email (wrap in try-catch)
     try {
-      await transporter.sendMail({
-        from: `"Sistema de Registro" <${EMAIL_CONFIG.auth.user}>`,
-        to: email,
+      const { data, error } = await resend.emails.send({
+        // IMPORTANTE: Usa este correo 'from' para pruebas. 
+        // No puedes usar tu gmail aquí hasta que verifiques un dominio en Resend.
+        from: 'onboarding@resend.dev', 
+        to: email, 
         subject: "Código de Verificación",
-        html: `Tu código de verificación es: <strong>${verificationCode}</strong>`
+        html: `
+          <div style="font-family: sans-serif; padding: 20px; color: #333;">
+            <h2>Verificación de Cuenta</h2>
+            <p>Hola ${username}, tu código es:</p>
+            <h1 style="letter-spacing: 5px; color: #000;">${verificationCode}</h1>
+            <p><small>Si no solicitaste esto, ignora este correo.</small></p>
+          </div>
+        `
       });
-      console.log('Verification email sent');
+
+      if (error) {
+        console.error('Resend API Error:', error);
+        throw new Error(error.message); // Lanzar error para que lo atrape el catch
+      }
+
+      console.log('Email enviado con éxito via Resend:', data);
+
     } catch (emailError) {
       console.error('Email sending error:', emailError);
       conn.release();
@@ -251,7 +273,7 @@ app.post('/register', [
         details: process.env.NODE_ENV === 'development' ? emailError.message : null
       });
     }
-
+    
     // Create temp token
     const hashedPassword = await bcrypt.hash(password, 10);
     const tempToken = jwt.sign({
@@ -1500,13 +1522,4 @@ server.listen(PORT, () => {
       console.log('El servidor Express está corriendo, pero no podrá manejar peticiones a la BD.');
       // Opcional: process.exit(1); para detener la aplicación si la BD es crítica.
     });
-
 });
-
-
-
-
-
-
-
-
