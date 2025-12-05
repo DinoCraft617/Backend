@@ -184,52 +184,40 @@ app.post('/register', [
   }
 
   const { username, email, password } = req.body;
+  let conn;
 
   try {
     console.log('Starting registration for:', username, email);
     
-    // Verify database connection first
-    let conn;
+    // Conexión a BD
     try {
       conn = await pool.getConnection();
-      console.log('Database connection established');
     } catch (dbError) {
       console.error('Database connection error:', dbError);
-      return res.status(500).json({ 
-        success: false, 
-        error: 'Database connection failed',
-        details: process.env.NODE_ENV === 'development' ? dbError.message : null
-      });
+      return res.status(500).json({ success: false, error: 'Database connection failed' });
     }
 
-    // Check if user exists
+    // Verificar usuario existente
     const [userExists] = await conn.query('SELECT id_user FROM usuarios WHERE nombre = ?', [username]);
     if (userExists.length > 0) {
       conn.release();
-      return res.status(409).json({ 
-        success: false, 
-        error: 'Usuario ya existe' 
-      });
+      return res.status(409).json({ success: false, error: 'Usuario ya existe' });
     }
 
-    // Check if email exists
+    // Verificar email existente
     const encryptedEmail = encryptData(email);
-    console.log('Encrypted email:', encryptedEmail);
-    
     const [emailExists] = await conn.query('SELECT id_user FROM usuarios WHERE correo = ?', [encryptedEmail]);
     if (emailExists.length > 0) {
       conn.release();
-      return res.status(409).json({ 
-        success: false, 
-        error: 'Correo ya registrado' 
-      });
+      return res.status(409).json({ success: false, error: 'Correo ya registrado' });
     }
 
-    // Generate verification code
+    // Generar código
     const verificationCode = generateVerificationCode();
-    console.log(`Verification code for ${email}: ${verificationCode}`);
+    console.log(`Verification code generated: ${verificationCode}`);
 
-    // Send email (wrap in try-catch)
+    // --- BLOQUE DE ENVÍO DE CORREO MODIFICADO ---
+    // Intentamos enviar el correo, pero si falla, continuamos igual.
     try {
       await transporter.sendMail({
         from: `"Sistema de Registro" <${EMAIL_CONFIG.auth.user}>`,
@@ -237,18 +225,15 @@ app.post('/register', [
         subject: "Código de Verificación",
         html: `Tu código de verificación es: <strong>${verificationCode}</strong>`
       });
-      console.log('Verification email sent');
+      console.log('Verification email sent successfully');
     } catch (emailError) {
-      console.error('Email sending error:', emailError);
-      conn.release();
-      return res.status(500).json({ 
-        success: false, 
-        error: 'Error al enviar el correo de verificación',
-        details: process.env.NODE_ENV === 'development' ? emailError.message : null
-      });
+      // AQUÍ ESTÁ LA CLAVE: Solo logueamos el error, NO retornamos respuesta al cliente.
+      console.error('ADVERTENCIA: Falló el envío de correo (Nodemailer), pero continuamos con el registro.');
+      console.error('Error detalle:', emailError.message);
     }
+    // ---------------------------------------------
 
-    // Create temp token
+    // Crear token temporal (Se ejecuta aunque el correo falle)
     const hashedPassword = await bcrypt.hash(password, 10);
     const tempToken = jwt.sign({
       username,
@@ -258,20 +243,18 @@ app.post('/register', [
     }, JWT_SECRET, { expiresIn: '15m' });
 
     conn.release();
-    console.log('Registration successful, temp token generated');
+    console.log('Registration flow completed, sending response...');
     
     return res.json({ 
       success: true, 
       tempToken,
-      debugCode: process.env.NODE_ENV === 'development' ? verificationCode : null
+      // Enviamos el código en la respuesta para que puedas verlo en el frontend si el correo falla
+      debugCode: verificationCode 
     });
 
   } catch (error) {
-    console.error('Registration error:', {
-      message: error.message,
-      stack: error.stack,
-      inputData: { username, email }
-    });
+    if (conn) conn.release();
+    console.error('Registration critical error:', error);
     return res.status(500).json({ 
       success: false, 
       error: 'Error en el servidor',
