@@ -173,12 +173,13 @@ app.post('/register', [
     return true;
   })
 ], async (req, res) => {
+  // 1. Manejo de errores de validación (express-validator)
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     console.error('Validation errors:', errors.array());
     return res.status(400).json({ 
       success: false, 
-      error: 'Validation failed',
+      error: 'Datos inválidos',
       details: errors.array() 
     });
   }
@@ -187,77 +188,89 @@ app.post('/register', [
   let conn;
 
   try {
-    console.log('Starting registration for:', username, email);
+    console.log('=== INICIANDO REGISTRO ===');
+    console.log('Usuario:', username, '| Email:', email);
     
-    // Conexión a BD
+    // 2. Conexión a la Base de Datos
     try {
       conn = await pool.getConnection();
     } catch (dbError) {
       console.error('Database connection error:', dbError);
-      return res.status(500).json({ success: false, error: 'Database connection failed' });
+      return res.status(500).json({ success: false, error: 'Error de conexión a base de datos' });
     }
 
-    // Verificar usuario existente
+    // 3. Verificar si el usuario ya existe
     const [userExists] = await conn.query('SELECT id_user FROM usuarios WHERE nombre = ?', [username]);
     if (userExists.length > 0) {
       conn.release();
-      return res.status(409).json({ success: false, error: 'Usuario ya existe' });
+      return res.status(409).json({ success: false, error: 'El nombre de usuario ya existe' });
     }
 
-    // Verificar email existente
+    // 4. Verificar si el correo ya existe (usando tu función de encriptación)
     const encryptedEmail = encryptData(email);
     const [emailExists] = await conn.query('SELECT id_user FROM usuarios WHERE correo = ?', [encryptedEmail]);
     if (emailExists.length > 0) {
       conn.release();
-      return res.status(409).json({ success: false, error: 'Correo ya registrado' });
+      return res.status(409).json({ success: false, error: 'Este correo ya está registrado' });
     }
 
-    // Generar código
+    // 5. Generar código de verificación
     const verificationCode = generateVerificationCode();
-    console.log(`Verification code generated: ${verificationCode}`);
+    console.log(`Código generado internamente: ${verificationCode}`);
+    
+    // 6. ENVÍO DE CORREO (BLOQUE "SILENT CATCH")
 
-    // --- BLOQUE DE ENVÍO DE CORREO MODIFICADO ---
-    // Intentamos enviar el correo, pero si falla, continuamos igual.
     try {
       await transporter.sendMail({
         from: `"Sistema de Registro" <${EMAIL_CONFIG.auth.user}>`,
         to: email,
         subject: "Código de Verificación",
-        html: `Tu código de verificación es: <strong>${verificationCode}</strong>`
+        html: `
+          <div style="font-family: Arial, sans-serif; padding: 20px;">
+            <h2>Bienvenido a la App</h2>
+            <p>Tu código de verificación es:</p>
+            <h1 style="color: #3498db; letter-spacing: 5px;">${verificationCode}</h1>
+            <p>Si no solicitaste este código, ignora este correo.</p>
+          </div>
+        `
       });
-      console.log('Verification email sent successfully');
+      console.log('✅ Correo enviado exitosamente a:', email);
     } catch (emailError) {
-      // AQUÍ ESTÁ LA CLAVE: Solo logueamos el error, NO retornamos respuesta al cliente.
-      console.error('ADVERTENCIA: Falló el envío de correo (Nodemailer), pero continuamos con el registro.');
-      console.error('Error detalle:', emailError.message);
+      console.error('⚠️ ADVERTENCIA: El correo falló, pero continuamos el registro.');
+      console.error('⚠️ Motivo del fallo:', emailError.message);
+      // NO hacemos return aquí. Dejamos que el código fluya.
     }
-    // ---------------------------------------------
 
-    // Crear token temporal (Se ejecuta aunque el correo falle)
+    // 7. Generar Token Temporal
     const hashedPassword = await bcrypt.hash(password, 10);
+    
     const tempToken = jwt.sign({
       username,
-      email: encryptedEmail,
+      email: encryptedEmail, // Guardamos el email encriptado en el token
       password: hashedPassword,
       verificationCode
     }, JWT_SECRET, { expiresIn: '15m' });
 
+    // Liberamos la conexión a la base de datos
     conn.release();
-    console.log('Registration flow completed, sending response...');
     
+    console.log('=== REGISTRO PROCESADO CORRECTAMENTE ===');
+    
+    // 8. Respuesta Exitosa
     return res.json({ 
       success: true, 
+      message: 'Pre-registro exitoso',
       tempToken,
-      // Enviamos el código en la respuesta para que puedas verlo en el frontend si el correo falla
       debugCode: verificationCode 
     });
 
   } catch (error) {
+    // Error General (DB query fallida, error de lógica, etc.)
     if (conn) conn.release();
-    console.error('Registration critical error:', error);
+    console.error('⛔ ERROR CRÍTICO EN REGISTRO:', error);
     return res.status(500).json({ 
       success: false, 
-      error: 'Error en el servidor',
+      error: 'Error interno del servidor',
       details: process.env.NODE_ENV === 'development' ? error.message : null
     });
   }
@@ -1481,3 +1494,4 @@ server.listen(PORT, () => {
     });
 
 });
+
