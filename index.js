@@ -1479,4 +1479,5 @@ server.listen(PORT, () => {
       console.log('El servidor Express está corriendo, pero no podrá manejar peticiones a la BD.');
       // Opcional: process.exit(1); para detener la aplicación si la BD es crítica.
     });
+
 });
