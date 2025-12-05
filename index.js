@@ -18,41 +18,7 @@ const app = express();
 // ======================
 // Configuración Constante
 // ======================
-const ENCRYPTION_KEY = "1234567890abcdef1234567890abcdef";
-const JWT_SECRET = "06177160876567451054943720268410";
-const PORT = process.env.PORT || 4000; 
-const DB_CONFIG = {
-  host: "gateway01.us-east-1.prod.aws.tidbcloud.com",
-  user: "4TWMF3o8nW2rqkp.root",
-  password: "Pc29ZYqysxBygU2G",
-  database: "pr_uni",
-  connectionLimit: 10,
-  
-  ssl: {
-    minVersion: 'TLSv1.2',
-    rejectUnauthorized: true,
-  },
-  
-  // Para mayor compatibilidad con mysql2
-  enableKeepAlive: true,
-  keepAliveInitialDelay: 0,
-  
-  // Configuración de zona horaria
-  timezone: 'Z',
-  dateStrings: true,
-  
-  // Configuración de charset
-  charset: 'utf8mb4'
-};
 
-
-const EMAIL_CONFIG = {
-  service: "gmail",
-  auth: {
-    user: "dinocraft617@gmail.com",
-    pass: "ihgd wnvq mpdo hinp"
-  }
-};
 
 // Funciones de utilidad mejoradas
 const encryptData = (data) => {
@@ -1494,4 +1460,5 @@ server.listen(PORT, () => {
     });
 
 });
+
 
