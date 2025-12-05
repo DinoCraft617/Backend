@@ -47,17 +47,14 @@ const DB_CONFIG = {
 };
 
 const EMAIL_CONFIG = {
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false, 
+  service: 'gmail', // Deja que Nodemailer configure los puertos automáticamente
   auth: {
     user: "dinocraft617@gmail.com",
     pass: "ihgd wnvq mpdo hinp"
   },
   tls: {
-    rejectUnauthorized: false
+    rejectUnauthorized: false // Ignora errores de certificado del servidor
   },
-
   family: 4 
 };
 
@@ -1505,6 +1502,7 @@ server.listen(PORT, () => {
     });
 
 });
+
 
 
 
