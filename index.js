@@ -239,7 +239,7 @@ app.post('/register', [
       const { data, error } = await resend.emails.send({
         // IMPORTANTE: Usa este correo 'from' para pruebas. 
         // No puedes usar tu gmail aquí hasta que verifiques un dominio en Resend.
-        from: 'onboarding@resend.dev', 
+        from: 'Pr_DMI <onboarding@resend.dev>', 
         to: email, 
         subject: "Código de Verificación",
         html: `
