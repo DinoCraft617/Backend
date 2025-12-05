@@ -10,13 +10,9 @@ const speakeasy = require('speakeasy');
 const CryptoJS = require('crypto-js');
 const http = require('http');
 const fs = require('fs');
-const { Resend } = require('resend');
 const { body, validationResult } = require('express-validator');
 
 const app = express();
-
-const resend = new Resend('re_hMwyHPtx_6zkNekPZ835VJjt3NayfjLw9');
-
 
 
 // ======================
@@ -32,7 +28,6 @@ const DB_CONFIG = {
   database: "pr_uni",
   connectionLimit: 10,
   
-  // 🔥 CONFIGURACIÓN SSL OBLIGATORIA para TiDB Cloud
   ssl: {
     minVersion: 'TLSv1.2',
     rejectUnauthorized: true,
@@ -96,7 +91,6 @@ const decryptData = (ciphertext) => {
     throw error;
   }
 };
-
 
 const generateVerificationCode = () => Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -235,30 +229,15 @@ app.post('/register', [
     const verificationCode = generateVerificationCode();
     console.log(`Verification code for ${email}: ${verificationCode}`);
 
+    // Send email (wrap in try-catch)
     try {
-      const { data, error } = await resend.emails.send({
-        // IMPORTANTE: Usa este correo 'from' para pruebas. 
-        // No puedes usar tu gmail aquí hasta que verifiques un dominio en Resend.
-        from: 'Pr_DMI <onboarding@resend.dev>', 
-        to: email, 
+      await transporter.sendMail({
+        from: `"Sistema de Registro" <${EMAIL_CONFIG.auth.user}>`,
+        to: email,
         subject: "Código de Verificación",
-        html: `
-          <div style="font-family: sans-serif; padding: 20px; color: #333;">
-            <h2>Verificación de Cuenta</h2>
-            <p>Hola ${username}, tu código es:</p>
-            <h1 style="letter-spacing: 5px; color: #000;">${verificationCode}</h1>
-            <p><small>Si no solicitaste esto, ignora este correo.</small></p>
-          </div>
-        `
+        html: `Tu código de verificación es: <strong>${verificationCode}</strong>`
       });
-
-      if (error) {
-        console.error('Resend API Error:', error);
-        throw new Error(error.message); // Lanzar error para que lo atrape el catch
-      }
-
-      console.log('Email enviado con éxito via Resend:', data);
-
+      console.log('Verification email sent');
     } catch (emailError) {
       console.error('Email sending error:', emailError);
       conn.release();
