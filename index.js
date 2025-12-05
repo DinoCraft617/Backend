@@ -97,11 +97,6 @@ const decryptData = (ciphertext) => {
   }
 };
 
-// Configuración HTTPS
-const httpsOptions = {
-  key: fs.readFileSync('key.pem'),  
-  cert: fs.readFileSync('cert.pem')   
-};
 
 const generateVerificationCode = () => Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -273,7 +268,7 @@ app.post('/register', [
         details: process.env.NODE_ENV === 'development' ? emailError.message : null
       });
     }
-    
+
     // Create temp token
     const hashedPassword = await bcrypt.hash(password, 10);
     const tempToken = jwt.sign({
